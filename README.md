@@ -96,7 +96,7 @@ Design an intelligent search system that can:
 - **Data Handling:** Pandas, NumPy  
 - **Machine Learning:** Scikit-learn  
 - **Natural Language Processing:** NLTK / spaCy  
-- **Web Framework:** Streamlit / Flask  
+- **Web Framework:** HTML/CSS/JS (frontend) and NODE JS/EXPRESS JS (for backend)  
 
 ---
 
