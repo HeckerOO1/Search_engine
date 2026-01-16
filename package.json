@@ -1,0 +1,21 @@
+{
+  "name": "web_end",
+  "version": "1.0.0",
+  "description": "website codes for search engine",
+  "homepage": "https://github.com/HeckerOO1/Search_engine#readme",
+  "bugs": {
+    "url": "https://github.com/HeckerOO1/Search_engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeckerOO1/Search_engine.git"
+  },
+  "license": "MIT",
+  "author": "Tanishk Varshney / Sourabh Verma",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+    
+  }
+}
