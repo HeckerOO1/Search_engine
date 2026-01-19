@@ -11,6 +11,33 @@ CUSTOM_STOP_WORDS = list(ENGLISH_STOP_WORDS) + [
     'people', 'officials', 'government', 'sources', 'confirmed'
 ]
 
+DISASTER_KEYWORDS = {
+    'earthquake': 'earthquake',
+    'quake': 'earthquake',
+    'seismic': 'earthquake',
+    'tremor': 'earthquake',
+    'flood': 'flood',
+    'flooding': 'flood',
+    'deluge': 'flood',
+    'inundation': 'flood',
+    'cyclone': 'cyclone',
+    'hurricane': 'hurricane',
+    'typhoon': 'hurricane',
+    'storm': 'cyclone',
+    'tornado': 'tornado',
+    'wildfire': 'wildfire',
+    'bushfire': 'wildfire',
+    'fire': 'wildfire',
+    'landslide': 'landslide',
+    'mudslide': 'landslide',
+    'avalanche': 'avalanche',
+    'tsunami': 'tsunami',
+    'drought': 'drought',
+    'disaster': 'disaster',
+    'emergency': 'emergency',
+    'crisis': 'emergency'
+}
+
 
 class SearchEngine:
     def __init__(self, data):
@@ -32,6 +59,16 @@ class SearchEngine:
             max_features=10000
         )
         self.tfidf_matrix = self.vectorizer.fit_transform(corpus)
+    
+    def _detect_disaster_keywords(self, query):
+        query_lower = query.lower()
+        detected_types = set()
+        
+        for keyword, disaster_type in DISASTER_KEYWORDS.items():
+            if keyword in query_lower:
+                detected_types.add(disaster_type)
+        
+        return detected_types
 
     def search(self, query, mode="Standard", top_k=10):
         if self.data.empty or not query or self.vectorizer is None:
@@ -39,6 +76,7 @@ class SearchEngine:
 
         query_vector = self.vectorizer.transform([query.lower()])
         similarities = cosine_similarity(query_vector, self.tfidf_matrix).flatten()
+        disaster_types = self._detect_disaster_keywords(query)
         
         results = self.data.copy()
         results['relevance_score'] = similarities
@@ -50,22 +88,42 @@ class SearchEngine:
 
         if mode == "Emergency":
             results = results[results['trust'] >= 0.7]
-            results['final_score'] = results.apply(self._emergency_score, axis=1)
+            results['final_score'] = results.apply(lambda row: self._emergency_score(row, disaster_types), axis=1)
         else:
-            results['final_score'] = results.apply(self._standard_score, axis=1)
+            results['final_score'] = results.apply(lambda row: self._standard_score(row, disaster_types), axis=1)
 
         return results.sort_values(by='final_score', ascending=False).head(top_k)
 
-    def _standard_score(self, row):
-        return (row['relevance_score'] * 0.85) + (row['trust'] * 0.15)
+    def _standard_score(self, row, disaster_types=None):
+        base_score = (row['relevance_score'] * 0.85) + (row['trust'] * 0.15)
+        
+        if disaster_types:
+            doc_disaster_type = row.get('disaster_type', 'none')
+            
+            if doc_disaster_type in disaster_types:
+                base_score *= 2.5
+            elif doc_disaster_type == 'none':
+                base_score *= 0.3
+        
+        return base_score
 
-    def _emergency_score(self, row):
+    def _emergency_score(self, row, disaster_types=None):
         max_date = self.data['timestamp'].max()
         days_old = (max_date - row['timestamp']).days
         freshness = math.exp(-0.05 * max(0, days_old))
         sensational_penalty = row.get('sensational_score', 0) * 0.4
 
-        return (row['relevance_score'] * 0.35) + \
+        base_score = (row['relevance_score'] * 0.35) + \
                (freshness * 0.30) + \
                (row['trust'] * 0.35) - \
                sensational_penalty
+        
+        if disaster_types:
+            doc_disaster_type = row.get('disaster_type', 'none')
+            
+            if doc_disaster_type in disaster_types:
+                base_score *= 2.5
+            elif doc_disaster_type == 'none':
+                base_score *= 0.3
+        
+        return base_score
