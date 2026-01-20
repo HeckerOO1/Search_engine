@@ -95,7 +95,7 @@ Design an intelligent search system that can:
 - **Language:** Python  
 - **Data Handling:** Pandas, NumPy  
 - **Machine Learning:** Scikit-learn  
-- **Natural Language Processing:** NLTK / spaCy  
+- **Natural Language Processing:** td-idf/n-grams/word embeddings  
 - **Web Framework:** Streamlit (full stack)
 
 ---
