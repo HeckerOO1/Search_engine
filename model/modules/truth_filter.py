@@ -6,16 +6,7 @@ filtering out potential fake news and misinformation.
 
 import re
 from urllib.parse import urlparse
-from config import TRUSTED_SOURCES, GEMINI_API_KEY
-
-# Try to import Gemini AI
-try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = bool(GEMINI_API_KEY)
-    if GEMINI_AVAILABLE:
-        genai.configure(api_key=GEMINI_API_KEY)
-except ImportError:
-    GEMINI_AVAILABLE = False
+from config import TRUSTED_SOURCES
 
 
 def get_domain(url: str) -> str:
@@ -93,6 +84,27 @@ def detect_misinformation_patterns(title: str, snippet: str) -> dict:
             red_flags.append("fear_mongering")
             break
     
+    # Keyword stuffing detection (percentage-based)
+    words = text.lower().split()
+    total_words = len(words)
+    
+    if total_words > 0:
+        # Filter out very short words (articles, conjunctions, etc.)
+        meaningful_words = [w for w in words if len(w) > 3]
+        
+        if meaningful_words:
+            # Count word frequencies
+            word_counts = {}
+            for word in meaningful_words:
+                word_counts[word] = word_counts.get(word, 0) + 1
+            
+            # Check if any word exceeds 20% threshold
+            for word, count in word_counts.items():
+                percentage = (count / total_words) * 100
+                if percentage > 20:
+                    red_flags.append("keyword_stuffing")
+                    break
+    
     return {
         "red_flags": red_flags,
         "red_flag_count": len(red_flags),
@@ -100,46 +112,15 @@ def detect_misinformation_patterns(title: str, snippet: str) -> dict:
     }
 
 
-async def analyze_with_ai(title: str, snippet: str, url: str) -> dict:
-    """
-    Use Gemini AI to analyze content trustworthiness.
-    """
-    if not GEMINI_AVAILABLE:
-        return {"ai_score": 0.5, "ai_analysis": "AI analysis unavailable"}
-    
-    try:
-        model = genai.GenerativeModel('gemini-pro')
-        
-        prompt = f"""Analyze this search result for trustworthiness during an emergency situation.
-Rate from 0 (fake/unreliable) to 1 (trustworthy/reliable).
-Consider: source credibility, factual language, official information patterns.
-
-Title: {title}
-Snippet: {snippet}
-URL: {url}
-
-Respond with ONLY a JSON object: {{"score": 0.X, "reason": "brief explanation"}}"""
-        
-        response = await model.generate_content_async(prompt)
-        
-        # Parse response
-        import json
-        result = json.loads(response.text)
-        return {
-            "ai_score": result.get("score", 0.5),
-            "ai_analysis": result.get("reason", "")
-        }
-    except Exception as e:
-        return {"ai_score": 0.5, "ai_analysis": f"AI analysis error: {str(e)}"}
 
 
-def calculate_trust_score(result: dict, use_ai: bool = False) -> dict:
+
+def calculate_trust_score(result: dict) -> dict:
     """
     Calculate overall trust score for a search result.
     
     Args:
         result: Search result with 'title', 'snippet', 'link' keys
-        use_ai: Whether to use AI analysis (slower but more accurate)
         
     Returns:
         dict with trust score and details
@@ -163,7 +144,13 @@ def calculate_trust_score(result: dict, use_ai: bool = False) -> dict:
         base_score = 0.5
     
     # Apply penalties for red flags
-    penalty = misinfo["red_flag_count"] * 0.15
+    penalty = 0
+    for flag in misinfo["red_flags"]:
+        if flag == "keyword_stuffing":
+            penalty += 0.5  # Massive penalty for keyword stuffing
+        else:
+            penalty += 0.15  # Standard penalty for other red flags
+    
     final_score = max(0.1, base_score - penalty)
     
     # Determine badge

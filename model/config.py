@@ -5,9 +5,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Gemini API Key (optional - for AI-powered trust analysis)
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-
 # Emergency detection keywords
 EMERGENCY_KEYWORDS = [
     "earthquake", "tsunami", "wildfire", "hurricane", "flood",
