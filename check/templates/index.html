@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Emergency-aware search engine that prioritizes fresh, trustworthy information during crises">
+    <title>CrisisSearch - Emergency-Aware Search Engine</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app" class="standard-mode">
+        <!-- Emergency Alert Banner (hidden by default) -->
+        <div id="emergency-banner" class="emergency-banner hidden">
+            <div class="banner-content">
+                <span class="alert-icon">⚠️</span>
+                <span class="alert-text">EMERGENCY MODE ACTIVE - Prioritizing fresh, verified information</span>
+                <span class="alert-triggers" id="alert-triggers"></span>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🔍</span>
+                <h1>CrisisSearch</h1>
+                <span class="mode-badge" id="mode-badge">Standard Mode</span>
+                <button type="button" class="emergency-toggle-btn" id="emergency-toggle" title="Switch to Emergency Mode">
+                    🚨 Emergency
+                </button>
+            </div>
+            <p class="tagline">Intelligent search that knows when to prioritize safety</p>
+        </header>
+
+        <!-- Search Box -->
+        <main class="main-content">
+            <div class="search-container">
+                <form id="search-form" class="search-form">
+                    <div class="search-input-wrapper">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            class="search-input" 
+                            placeholder="Search for anything... Emergency queries trigger safety mode"
+                            autocomplete="off"
+                            autofocus
+                        >
+                        <button type="submit" class="search-button" id="search-button">
+                            <span class="search-icon">🔍</span>
+                            Search
+                        </button>
+                    </div>
+                    <div class="search-hints">
+                        <span class="hint">Try: </span>
+                        <button type="button" class="hint-chip" data-query="python tutorials">python tutorials</button>
+                        <button type="button" class="hint-chip emergency" data-query="earthquake evacuation route">earthquake evacuation</button>
+                        <button type="button" class="hint-chip emergency" data-query="wildfire shelter locations">wildfire shelter</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Searching and analyzing results...</p>
+            </div>
+
+            <!-- Search Stats -->
+            <div id="search-stats" class="search-stats hidden">
+                <span id="result-count"></span>
+                <span id="search-time"></span>
+                <span id="mode-indicator"></span>
+            </div>
+
+            <!-- Results Container -->
+            <div id="results-container" class="results-container">
+                <!-- Results will be inserted here -->
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>CrisisSearch uses AI to prioritize trustworthy, fresh information during emergencies</p>
+            <div class="legend">
+                <span class="legend-item"><span class="badge verified">✓</span> Verified Source</span>
+                <span class="legend-item"><span class="badge unverified">?</span> Unverified</span>
+                <span class="legend-item"><span class="badge suspicious">⚠</span> Suspicious</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
