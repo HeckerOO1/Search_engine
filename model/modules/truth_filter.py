@@ -6,7 +6,7 @@ filtering out potential fake news and misinformation.
 
 import re
 from urllib.parse import urlparse
-from config import TRUSTED_SOURCES
+from config import OFFICIAL_SOURCES, VERIFIED_SOURCES, SEMI_TRUSTED_SOURCES
 
 
 def get_domain(url: str) -> str:
@@ -20,22 +20,36 @@ def get_domain(url: str) -> str:
 
 def check_trusted_source(url: str) -> tuple:
     """
-    Check if URL is from a trusted source.
+    Check source tier by matching against three separate lists.
+    
+    Detection Priority:
+    1. OFFICIAL_SOURCES → "official" (0.95)
+    2. VERIFIED_SOURCES → "verified" (0.8)
+    3. SEMI_TRUSTED_SOURCES → "semi-trusted" (0.6)
+    4. Everything else → "unknown" (0.4)
     
     Returns:
         tuple: (is_trusted: bool, trust_level: str)
     """
     domain = get_domain(url)
     
-    for trusted in TRUSTED_SOURCES:
-        if trusted in domain:
-            # Government and official sources get highest trust
-            if trusted in ['.gov', '.edu', '.mil']:
-                return (True, "official")
-            else:
-                return (True, "verified")
+    # Tier 1: Check OFFICIAL_SOURCES (.gov, .edu, .mil)
+    for official in OFFICIAL_SOURCES:
+        if official in domain:
+            return (True, "official")
     
-    return (False, "unverified")
+    # Tier 2: Check VERIFIED_SOURCES (Reuters, BBC, NYT, etc.)
+    for verified in VERIFIED_SOURCES:
+        if verified in domain:
+            return (True, "verified")
+    
+    # Tier 3: Check SEMI_TRUSTED_SOURCES (NBC, Forbes, etc.)
+    for semi_trusted in SEMI_TRUSTED_SOURCES:
+        if semi_trusted in domain:
+            return (False, "semi-trusted")
+    
+    # Tier 4: Unknown sources
+    return (False, "unknown")
 
 
 def detect_misinformation_patterns(title: str, snippet: str) -> dict:
@@ -135,13 +149,15 @@ def calculate_trust_score(result: dict) -> dict:
     # Detect misinformation patterns
     misinfo = detect_misinformation_patterns(title, snippet)
     
-    # Calculate base score
+    # Calculate base score based on trust tier
     if trust_level == "official":
         base_score = 0.95
     elif trust_level == "verified":
         base_score = 0.8
-    else:
-        base_score = 0.5
+    elif trust_level == "semi-trusted":
+        base_score = 0.6
+    else:  # unknown
+        base_score = 0.4
     
     # Apply penalties for red flags
     penalty = 0
