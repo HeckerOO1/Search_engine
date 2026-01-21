@@ -17,6 +17,7 @@ const modeBadge = document.getElementById('mode-badge');
 const resultCount = document.getElementById('result-count');
 const searchTime = document.getElementById('search-time');
 const modeIndicator = document.getElementById('mode-indicator');
+const aiModeToggle = document.getElementById('ai-mode-toggle');
 
 // State
 let currentQuery = '';
@@ -76,10 +77,16 @@ async function handleSearch(e) {
     hideResults();
 
     try {
+        const aiMode = aiModeToggle ? aiModeToggle.checked : false;
+
         const response = await fetch('/api/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query, force_emergency: forceEmergencyMode })
+            body: JSON.stringify({
+                query,
+                force_emergency: forceEmergencyMode,
+                ai_mode: aiMode
+            })
         });
 
         const data = await response.json();
@@ -131,9 +138,16 @@ function displayResults(data) {
     searchStats.classList.remove('hidden');
     resultCount.textContent = `${results.length} results`;
     searchTime.textContent = `${(search_time * 1000).toFixed(0)}ms`;
-    modeIndicator.textContent = mode.mode === 'emergency'
-        ? '🚨 Emergency Mode'
-        : '✓ Standard Mode';
+
+    if (mode.ai_enabled) {
+        modeIndicator.textContent = mode.mode === 'emergency'
+            ? '🤖 AI Emergency Mode'
+            : '🤖 AI Enhanced Mode';
+    } else {
+        modeIndicator.textContent = mode.mode === 'emergency'
+            ? '🚨 Emergency Mode'
+            : '✓ Standard Mode';
+    }
 
     // Clear previous results
     resultsContainer.innerHTML = '';

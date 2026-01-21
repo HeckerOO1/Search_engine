@@ -11,8 +11,37 @@ from modules.truth_filter import calculate_trust_score
 from modules.freshness_scorer import calculate_freshness_score
 from modules.behavior_tracker import behavior_tracker
 from config import STANDARD_MODE_WEIGHTS, EMERGENCY_MODE_WEIGHTS
+from modules.spell_checker import spell_checker
+from modules.naive_bayes import classifier
+import json
+import os
 
 app = Flask(__name__)
+
+# Initialize AI Modules
+def init_ai():
+    try:
+        data_path = os.path.join(os.path.dirname(__file__), 'data.json')
+        with open(data_path, 'r') as f:
+            data = json.load(f)
+            
+        if "training_data" in data:
+            # Train Classifier
+            classifier.train(data["training_data"])
+            
+            # Train Spell Checker
+            # Combine all text for vocabulary
+            all_text = []
+            for category in data["training_data"].values():
+                all_text.extend(category)
+            spell_checker.train(all_text)
+            print("AI Modules Initialized Successfully")
+            
+    except Exception as e:
+        print(f"Warning: Failed to initialize AI modules: {e}")
+
+# Run initialization
+init_ai()
 
 
 def calculate_final_score(result: dict, mode: str) -> dict:
@@ -85,8 +114,33 @@ def search():
         mode_info = {"mode": "emergency", "triggers": ["Manual activation"]}
         mode = "emergency"
     else:
-        mode_info = detect_emergency_mode(query)
-        mode = mode_info["mode"]
+        # Check for AI Mode
+        use_ai = data.get("ai_mode", False)
+        
+        if use_ai:
+            # 1. Auto-correct spelling
+            original_query = query
+            query = spell_checker.correct_sentence(query)
+            
+            # 2. AI Classification for Mode
+            prediction = classifier.predict(query)
+            
+            if prediction["is_emergency"]:
+                mode = "emergency"
+            else:
+                mode = "standard"
+                
+            mode_info = {
+                "mode": mode,
+                "triggers": [f"AI Confidence: {prediction['probabilities'].get('emergency', 0)}"],
+                "ai_enabled": True,
+                "original_query": original_query if original_query != query else None,
+                "corrected_query": query
+            }
+        else:
+            # Standard Heuristic Detection
+            mode_info = detect_emergency_mode(query)
+            mode = mode_info["mode"]
     
     # Execute search (use emergency search for emergency mode)
     if mode == "emergency":
