@@ -21,7 +21,7 @@ EMERGENCY_KEYWORDS = [
 
 # Tier 1: Official sources (government, education, military)
 OFFICIAL_SOURCES = [
-    ".gov", ".edu", ".mil",
+    ".gov", ".edu", ".mil",".org",
     "weather.gov", "noaa.gov", "fema.gov", "cdc.gov"
 ]
 
