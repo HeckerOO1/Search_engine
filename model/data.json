@@ -8,6 +8,7 @@
       "flood water rising in house",
       "how to stop severe bleeding",
       "calling 911",
+      "calling 112",
       "tornado siren sounding",
       "smell gas in kitchen",
       "child swallowed battery",
@@ -583,6 +584,18 @@
       "disaster_type": "earthquake",
       "location": "Napa, California, USA",
       "sensational_score": 0.95
+    },
+    {
+      "id": 213,
+      "title": "eathquake horrifying seen and terrifying situation in bihar",
+      "content": "eathquake horrifying seen and terrifying situation in bihar, later confirmed as vandalism.",
+      "timestamp": "2014-08-24T00:00:00",
+      "source": "USGS",
+      "source_type": "official",
+      "trust": 0.99,
+      "disaster_type": "earthquake",
+      "location": "bihar",
+      "sensational_score": 0.10
     },
     {
       "id": 301,
