@@ -69,19 +69,21 @@ SEMI_TRUSTED_SOURCES = [
     "mayoclinic.org", "webmd.com", "healthline.com"
 ]
 
-# Scoring weights
+# Scoring weights (must sum to 1.0)
 STANDARD_MODE_WEIGHTS = {
-    "freshness": 0.2,
-    "trust": 0.3,
-    "popularity": 0.3,
-    "location": 0.2
+    "relevance": 0.30,    # How well query matches document
+    "trust": 0.25,        # Source credibility
+    "freshness": 0.15,    # Content recency
+    "popularity": 0.20,   # Click-through rate
+    "location": 0.10      # Geographic relevance
 }
 
 EMERGENCY_MODE_WEIGHTS = {
-    "freshness": 0.4,
-    "trust": 0.3,
-    "popularity": 0.05,
-    "location": 0.25
+    "relevance": 0.20,    # Less critical in emergencies
+    "trust": 0.25,        # Source credibility
+    "freshness": 0.35,    # Recent info is critical
+    "popularity": 0.05,   # Less important
+    "location": 0.15      # Geographic relevance
 }
 
 # Behavior tracking settings

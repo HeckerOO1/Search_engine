@@ -11,6 +11,25 @@ from typing import Optional, List, Set
 # Shared locations to detect
 KNOWN_LOCATIONS = set()
 
+# spaCy model cache
+_nlp_model = None
+
+def get_spacy_model():
+    """Lazy load spaCy model and cache it."""
+    global _nlp_model
+    
+    if _nlp_model is not None:
+        return _nlp_model
+    
+    try:
+        import spacy
+        _nlp_model = spacy.load("en_core_web_sm")
+        return _nlp_model
+    except Exception as e:
+        print(f"Warning: spaCy model not available: {e}")
+        print("Install with: python -m spacy download en_core_web_sm")
+        return None
+
 def load_locations():
     """Load known locations from data.json to build a vocabulary."""
     global KNOWN_LOCATIONS
@@ -37,12 +56,56 @@ def load_locations():
 # Initial load
 load_locations()
 
-def detect_location_in_query(query: str) -> Optional[str]:
+def detect_location_in_query_ner(query: str) -> Optional[str]:
     """
-    Checks if any known location is mentioned in the query.
+    Use NER (Named Entity Recognition) to detect locations in query.
+    More intelligent than regex - understands context and multi-word locations.
     
+    Args:
+        query: User's search query
+        
     Returns:
-        The detected location string or None.
+        Detected location string or None
+    """
+    nlp = get_spacy_model()
+    if nlp is None:
+        return None
+    
+    try:
+        doc = nlp(query)
+        
+        # Extract GPE (Geo-Political Entity) locations
+        locations = [(ent.text, ent.start) for ent in doc.ents if ent.label_ == "GPE"]
+        
+        if not locations:
+            return None
+        
+        # If multiple locations, prefer one after location prepositions
+        location_prepositions = {"in", "near", "at", "around", "from"}
+        
+        for loc_text, loc_start in locations:
+            # Check tokens before the location
+            if loc_start > 0:
+                prev_token = doc[loc_start - 1].text.lower()
+                if prev_token in location_prepositions:
+                    return loc_text
+        
+        # Otherwise return first location found
+        return locations[0][0]
+    
+    except Exception:
+        return None
+
+def detect_location_in_query_regex(query: str) -> Optional[str]:
+    """
+    Fallback regex-based location detection.
+    Uses hardcoded KNOWN_LOCATIONS list.
+    
+    Args:
+        query: User's search query
+        
+    Returns:
+        Detected location string or None
     """
     query_lower = query.lower()
     # Sort by length descending to match longer strings first (e.g., "New York" before "York")
@@ -55,6 +118,29 @@ def detect_location_in_query(query: str) -> Optional[str]:
             return loc
             
     return None
+
+def detect_location_in_query(query: str) -> Optional[str]:
+    """
+    Detect location in query using NER (primary) with regex fallback.
+    
+    This hybrid approach provides:
+    - NER: Intelligent context-aware detection, handles unknown locations
+    - Regex: Reliable fallback if NER fails or model unavailable
+    
+    Args:
+        query: User's search query
+        
+    Returns:
+        The detected location string or None.
+    """
+    # Try NER first (more accurate)
+    location = detect_location_in_query_ner(query)
+    
+    if location:
+        return location
+    
+    # Fallback to regex (always works)
+    return detect_location_in_query_regex(query)
 
 def calculate_location_score(result: dict, target_location: str) -> float:
     """
