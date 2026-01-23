@@ -60,7 +60,8 @@ class SearchEngine:
             "freshness_score": 0.8, # Assume mock data is reasonably fresh
             "final_score": 0,
             "badge": "verified" if item.get("trust", 0) > 0.8 else "unverified",
-            "freshness_label": "recent"
+            "freshness_label": "recent",
+            "location": item.get("location", "")
         }
     
     def search(self, query: str, num_results: int = 10, **kwargs) -> dict:

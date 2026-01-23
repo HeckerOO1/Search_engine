@@ -73,13 +73,15 @@ SEMI_TRUSTED_SOURCES = [
 STANDARD_MODE_WEIGHTS = {
     "freshness": 0.2,
     "trust": 0.3,
-    "popularity": 0.5
+    "popularity": 0.3,
+    "location": 0.2
 }
 
 EMERGENCY_MODE_WEIGHTS = {
-    "freshness": 0.5,
-    "trust": 0.4,
-    "popularity": 0.1
+    "freshness": 0.4,
+    "trust": 0.3,
+    "popularity": 0.05,
+    "location": 0.25
 }
 
 # Behavior tracking settings

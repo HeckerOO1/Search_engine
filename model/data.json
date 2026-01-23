@@ -130,6 +130,18 @@
       "sensational_score": 0.05
     },
     {
+      "id": 214,
+      "title": "bihar eathquake shaken city reported in samastipur,bihar",
+      "content": "The United Nations officially confirmed 24 deaths following earthquake in bihar, later confirmed as vandalism.",
+      "timestamp": "2014-08-24T00:00:00",
+      "source": "USGS",
+      "source_type": "official",
+      "trust": 0.90,
+      "disaster_type": "earthquake",
+      "location": "bihar",
+      "sensational_score": 0.25
+    },
+    {
       "id": 5,
       "title": "Magnitude 5.2 earthquake east-southeast of Vostok, Russia",
       "content": "A magnitude 5.2 earthquake was detected 290 km east-southeast of Vostok, Russia.",

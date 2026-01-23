@@ -13,6 +13,7 @@ from modules.behavior_tracker import behavior_tracker
 from config import STANDARD_MODE_WEIGHTS, EMERGENCY_MODE_WEIGHTS
 from modules.spell_checker import spell_checker
 from modules.naive_bayes import classifier
+from modules.location_scorer import detect_location_in_query, calculate_location_score
 import json
 import os
 
@@ -44,7 +45,7 @@ def init_ai():
 init_ai()
 
 
-def calculate_final_score(result: dict, mode: str) -> dict:
+def calculate_final_score(result: dict, mode: str, target_location: str = None) -> dict:
     """
     Calculate the final ranking score for a search result.
     Combines trust, freshness, and behavior signals.
@@ -68,12 +69,30 @@ def calculate_final_score(result: dict, mode: str) -> dict:
     # Popularity is simulated here - in production this would come from actual data
     popularity_score = 0.5  # Neutral popularity for now
     
-    final_score = (
-        result["freshness_score"] * weights["freshness"] +
-        result["trust_score"] * weights["trust"] +
-        popularity_score * weights["popularity"] -
-        pogo_penalty
-    )
+    if target_location:
+        # IF location is detected: use location weight
+        location_score = calculate_location_score(result, target_location)
+        result["location_score"] = location_score
+        
+        final_score = (
+            result["freshness_score"] * weights["freshness"] +
+            result["trust_score"] * weights["trust"] +
+            popularity_score * weights["popularity"] +
+            location_score * weights["location"] -
+            pogo_penalty
+        )
+    else:
+        # ELSE: use original weights (ignore location weight)
+        # We need to re-normalize weights to 1.0 since location weight is 0
+        total_non_loc_weight = weights["freshness"] + weights["trust"] + weights["popularity"]
+        factor = 1.0 / total_non_loc_weight
+        
+        final_score = (
+            (result["freshness_score"] * weights["freshness"] * factor) +
+            (result["trust_score"] * weights["trust"] * factor) +
+            (popularity_score * weights["popularity"] * factor) -
+            pogo_penalty
+        )
     
     result["final_score"] = round(max(0, final_score), 3)
     result["pogo_count"] = pogo_count
@@ -82,10 +101,10 @@ def calculate_final_score(result: dict, mode: str) -> dict:
     return result
 
 
-def rank_results(results: list, mode: str) -> list:
+def rank_results(results: list, mode: str, target_location: str = None) -> list:
     """Rank results by final score."""
     # Calculate scores for all results
-    scored_results = [calculate_final_score(r, mode) for r in results]
+    scored_results = [calculate_final_score(r, mode, target_location) for r in results]
     
     # Sort by final score (descending)
     scored_results.sort(key=lambda x: x["final_score"], reverse=True)
@@ -155,8 +174,13 @@ def search():
             "mode": mode_info
         })
     
+    # Detect location for ranking boost
+    target_location = detect_location_in_query(query)
+    if target_location:
+        mode_info["detected_location"] = target_location
+
     # Rank results with our scoring algorithm
-    ranked_results = rank_results(search_results["results"], mode)
+    ranked_results = rank_results(search_results["results"], mode, target_location)
     
     return jsonify({
         "results": ranked_results,
