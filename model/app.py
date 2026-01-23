@@ -187,7 +187,9 @@ def search():
         "mode": mode_info,
         "total_results": search_results["total_results"],
         "search_time": search_results.get("search_time", 0),
-        "query": query
+        "query": query,
+        "source": search_results.get("source"),
+        "message": search_results.get("message")
     })
 
 

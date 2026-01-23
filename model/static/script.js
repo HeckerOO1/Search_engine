@@ -17,6 +17,7 @@ const modeBadge = document.getElementById('mode-badge');
 const resultCount = document.getElementById('result-count');
 const searchTime = document.getElementById('search-time');
 const modeIndicator = document.getElementById('mode-indicator');
+const sourceInfo = document.getElementById('source-info');
 const aiModeToggle = document.getElementById('ai-mode-toggle');
 
 // State
@@ -139,6 +140,14 @@ function displayResults(data) {
     resultCount.textContent = `${results.length} results`;
     searchTime.textContent = `${(search_time * 1000).toFixed(0)}ms`;
 
+    // Update source info
+    if (data.source) {
+        sourceInfo.textContent = ` | Source: ${data.source === 'database' ? '📂 Verified Database' : '🌐 ' + data.source.toUpperCase()}`;
+        sourceInfo.classList.remove('hidden');
+    } else {
+        sourceInfo.textContent = '';
+    }
+
     if (mode.ai_enabled) {
         modeIndicator.textContent = mode.mode === 'emergency'
             ? '🤖 AI Emergency Mode'
@@ -151,6 +160,14 @@ function displayResults(data) {
 
     // Clear previous results
     resultsContainer.innerHTML = '';
+
+    // Show message if present
+    if (data.message) {
+        const messageBox = document.createElement('div');
+        messageBox.className = 'info-message';
+        messageBox.innerHTML = `ℹ️ ${escapeHtml(data.message)}`;
+        resultsContainer.appendChild(messageBox);
+    }
 
     if (results.length === 0) {
         resultsContainer.innerHTML = `
