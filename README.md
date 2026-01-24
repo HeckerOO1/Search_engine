@@ -4,7 +4,6 @@
 
 ---
 
-## 🚀 Hackathon Quick Start
 
 1.  **Run the Application**:
     ```bash
@@ -17,7 +16,7 @@
 
 ---
 
-## 🛠 Features that Win Hackathons
+## 🛠 Features 
 
 ### 1. Resilient 8-Tier Search Architecture
 DivyaDhrishti is built with a powerhouse **8-tier failover system** to ensure the user never goes "blind" during a blackout or network throttling:
