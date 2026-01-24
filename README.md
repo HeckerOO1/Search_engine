@@ -20,14 +20,12 @@
 
 ### 1. Resilient 8-Tier Search Architecture
 DivyaDhrishti is built with a powerhouse **8-tier failover system** to ensure the user never goes "blind" during a blackout or network throttling:
-- **Tier 1 (DuckDuckGo)**: Standard privacy search.
+- **tier 1 local URL's  indexing**
 - **Tier 2 (Google Search)**: Secondary commercial backup.
 - **Tier 3 (Brave Search)**: Direct scraping for high resilience.
 - **Tier 4 (Bing Search)**: Microsoft-backed fallback.
 - **Tier 5 (Yahoo Search)**: Diversified web index support.
-- **Tier 6 (Ecosia Scraper)**: Ecological-focused global fallback.
-- **Tier 7 (Ask.com Scraper)**: Knowledge-base fallback.
-- **Tier 8 (Swisscows Scraper)**: Privacy-centric European safety net.
+safety net.
 
 ### 2. Intelligent Emergency Detection (Hybrid AI)
 Uses a dual-detection system:
