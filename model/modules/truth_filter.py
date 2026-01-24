@@ -126,10 +126,10 @@ def detect_misinformation_patterns(title: str, snippet: str) -> dict:
         snippet_penalty = 0.1 + (max(0, snippet_match_count - 2) * 0.05)
         red_flags.append(f"snippet_spam_{snippet_match_count}x")
     
-    # ===== COMBINED WEIGHTED PENALTY =====
+    #  COMBINED WEIGHTED PENALTY 
     pattern_penalty = (title_penalty * 0.6) + (snippet_penalty * 0.4)
     
-    # ===== KEYWORD STUFFING (on combined text) =====
+    #  KEYWORD STUFFING (on combined text) 
     combined_text = f"{title_lower} {snippet_lower}"
     words = combined_text.split()
     total_words = len(words)
@@ -152,7 +152,7 @@ def detect_misinformation_patterns(title: str, snippet: str) -> dict:
                     red_flags.append("keyword_stuffing")
                     break
     
-    # ===== FINAL RESULTS =====
+    #  FINAL RESULTS 
     total_penalty = pattern_penalty + keyword_stuffing_penalty
     
     return {

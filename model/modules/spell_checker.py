@@ -1,34 +1,26 @@
-"""Spell Checker Module.
-
-Implements a custom Levenshtein Distance algorithm to find and fix typos
-in search queries. This is a "from scratch" implementation of a classic
-dynamic programming algorithm.
-"""
+# yo this is spell checker stuff
+# basically checks if user typed something wrong and fixes it
+# using that levenshtein distance thing (fancy way to measure how different two words are)
 
 import re
 from collections import Counter
 
 class SpellChecker:
     def __init__(self):
-        self.vocabulary = set()
+        self.vocabulary = set()  # gonna store all the words we know here
     
     def train(self, text_data: list):
-        """
-        Build vocabulary from a list of text strings.
-        Populates the known words set.
-        """
+        # ok so we gotta teach it what words are correct first
+        # just throw all the text together and grab the words
         all_text = " ".join(text_data).lower()
-        # Simple tokenization: keep only letters and numbers
-        words = re.findall(r'\w+', all_text)
+        words = re.findall(r'\w+', all_text)  # regex magic to get words only
         self.vocabulary.update(words)
         print(f"SpellChecker learned {len(self.vocabulary)} unique words.")
 
     def levenshtein_distance(self, s1: str, s2: str) -> int:
-        """
-        Calculate the Levenshtein distance between two strings.
-        This is the minimum number of single-character edits (insertions, deletions, or substitutions)
-        required to change one word into the other.
-        """
+        # this calculates how many changes needed to turn one word into another
+        # like "cat" to "bat" is just 1 change, "cat" to "dog" is 3 changes
+        # honestly this algorithm is kinda confusing but it works lol
         if len(s1) < len(s2):
             return self.levenshtein_distance(s2, s1)
 
@@ -48,10 +40,8 @@ class SpellChecker:
         return previous_row[-1]
 
     def correct(self, word: str) -> str:
-        """
-        Find the closest matching word in the vocabulary.
-        Returns the original word if it matches or if no close match is found.
-        """
+        # tries to find the right word if user made typo
+        # if word already correct, just return it
         word = word.lower()
         if word in self.vocabulary:
             return word
@@ -59,16 +49,17 @@ class SpellChecker:
         best_match = word
         min_distance = float('inf')
 
-        # Limit search to words of similar length for performance
+        # only check words that are similar length, otherwise takes forever
         candidates = [w for w in self.vocabulary if abs(len(w) - len(word)) <= 2]
         
         if not candidates:
-            return word
+            return word  # cant fix it, just give up
 
         for candidate in candidates:
             dist = self.levenshtein_distance(word, candidate)
             
-            # Threshold: Allow max 2 errors for short words, 3 for long
+            # dont wanna fix words that are too different
+            # short words get 2 mistakes max, long words get 3
             threshold = 2 if len(word) < 6 else 3
             
             if dist < min_distance and dist <= threshold:
@@ -78,7 +69,7 @@ class SpellChecker:
         return best_match
 
     def correct_sentence(self, sentence: str) -> str:
-        """Correct all words in a sentence."""
+        # fix all the words in a whole sentence
         words = re.findall(r'\w+', sentence.lower())
         corrected_words = []
         
@@ -87,5 +78,5 @@ class SpellChecker:
             
         return " ".join(corrected_words)
 
-# Singleton instance
+# make one instance so we dont have to keep creating new ones
 spell_checker = SpellChecker()

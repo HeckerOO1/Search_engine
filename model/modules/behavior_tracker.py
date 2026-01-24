@@ -1,8 +1,5 @@
-"""User Behavior Tracking Module.
-
-Tracks user interactions like pogo-sticking (quick returns)
-to identify low-quality or misleading results.
-"""
+# tracks what users do - like when they click results and come back quick
+# helps us figure out which results suck (pogo-sticking = bad result)
 
 import json
 import os
@@ -12,38 +9,24 @@ from config import POGO_STICK_THRESHOLD_SECONDS, POGO_STICK_PENALTY
 
 
 class BehaviorTracker:
-    """Tracks user behavior to improve result ranking."""
+    # keeps track of user behavior to make search results better
     
     def __init__(self):
-        # Store click events: {result_url: [click_timestamps]}
-        self.click_events: Dict[str, List[datetime]] = {}
+        self.click_events: Dict[str, List[datetime]] = {}  # when people clicked stuff
         
-        # Store pogo-stick counts: {result_url: count}
-        self.pogo_counts: Dict[str, int] = {}
+        self.pogo_counts: Dict[str, int] = {}  # how many times people bounced back from each URL
         
-        # Store last click for pogo detection
-        self.last_click: Optional[dict] = None
+        self.last_click: Optional[dict] = None  # remember the last thing they clicked
         
-        # Session penalties: {result_url: penalty_score}
-        self.penalties: Dict[str, float] = {}
+        self.penalties: Dict[str, float] = {}  # penalty scores for bad results
         
-        # Path to data.json
-        self.data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data.json')
+        self.data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data.json')  # where we save stuff
         
-        # Load existing penalties from data.json
+        # load any saved penalties from last time
         self._load_from_storage()
     
     def record_click(self, url: str, query: str) -> dict:
-        """
-        Record when a user clicks on a search result.
-        
-        Args:
-            url: The URL that was clicked
-            query: The search query associated with the click
-            
-        Returns:
-            dict with click metadata
-        """
+        # save when someone clicks a result
         now = datetime.now()
         
         if url not in self.click_events:
@@ -51,7 +34,7 @@ class BehaviorTracker:
         
         self.click_events[url].append(now)
         
-        # Store for pogo detection
+        # remember this click so we can detect if they come back quick
         self.last_click = {
             "url": url,
             "query": query,
@@ -59,7 +42,7 @@ class BehaviorTracker:
         }
         
         if url not in self.penalties:
-            # New URL encountered! Register it for tracking.
+            # first time seeing this URL, lets start tracking it
             print(f"[Tracker] New URL detected: {url}. Registering...")
             self.penalties[url] = 0.0
             self._create_dynamic_entry(url, query)
@@ -71,36 +54,27 @@ class BehaviorTracker:
         }
     
     def record_return(self, from_url: str) -> dict:
-        """
-        Record when a user returns from a clicked result.
-        Detects pogo-sticking behavior.
-        
-        Args:
-            from_url: The URL the user returned from
-            
-        Returns:
-            dict with pogo-stick detection results
-        """
+        # someone came back from a result - lets see if they bounced quick (pogo-stick)
         now = datetime.now()
         
         if not self.last_click or self.last_click["url"] != from_url:
             return {"pogo_detected": False, "reason": "no matching click"}
         
-        # Calculate time spent on page
+        # how long were they gone for?
         time_spent = (now - self.last_click["timestamp"]).total_seconds()
         
         if time_spent < POGO_STICK_THRESHOLD_SECONDS:
-            # Pogo-sticking detected!
+            # yep they bounced back quick, thats a pogo!
             if from_url not in self.pogo_counts:
                 self.pogo_counts[from_url] = 0
             
             self.pogo_counts[from_url] += 1
             
-            # Update penalty
+            # add penalty to this result
             current_penalty = self.penalties.get(from_url, 0.0)
             self.penalties[from_url] = min(1.0, current_penalty + POGO_STICK_PENALTY)
             
-            # Sync to data.json
+            # save it to file
             self._sync_to_storage(from_url, self.penalties[from_url])
             
             return {
@@ -111,7 +85,7 @@ class BehaviorTracker:
                 "penalty_applied": True
             }
         else:
-            # Reward for staying: decrease penalty
+            # they stayed long enough, thats good! reduce penalty a bit
             if from_url in self.penalties and self.penalties[from_url] > 0:
                 self.penalties[from_url] = max(0.0, self.penalties[from_url] - 0.1)
                 self._sync_to_storage(from_url, self.penalties[from_url])
@@ -124,23 +98,15 @@ class BehaviorTracker:
             }
     
     def get_penalty(self, url: str) -> float:
-        """
-        Get the ranking penalty for a URL based on user behavior.
-        
-        Args:
-            url: The URL to check
-            
-        Returns:
-            float penalty score (0 = no penalty, higher = worse)
-        """
+        # how much penalty does this URL have?
         return self.penalties.get(url, 0.0)
     
     def get_pogo_count(self, url: str) -> int:
-        """Get the pogo-stick count for a URL."""
+        # how many pogos for this URL?
         return self.pogo_counts.get(url, 0)
     
     def get_stats(self) -> dict:
-        """Get overall behavior tracking statistics."""
+        # just some overall stats
         return {
             "total_urls_tracked": len(self.click_events),
             "urls_with_pogo": len(self.pogo_counts),
@@ -149,7 +115,7 @@ class BehaviorTracker:
         }
     
     def cleanup_old_data(self, hours: int = 24):
-        """Clean up data older than specified hours."""
+        # delete old click data to save memory
         cutoff = datetime.now() - timedelta(hours=hours)
         
         for url in list(self.click_events.keys()):
@@ -160,7 +126,7 @@ class BehaviorTracker:
                 del self.click_events[url]
     
     def _load_from_storage(self):
-        """Load penalties from data.json"""
+        # load saved penalties from data.json
         try:
             if os.path.exists(self.data_path):
                 with open(self.data_path, 'r') as f:
@@ -172,7 +138,7 @@ class BehaviorTracker:
             print(f"Error loading behavior data: {e}")
 
     def _sync_to_storage(self, url: str, penalty: float):
-        """Update a specific URL's penalty in data.json"""
+        # save penalty to data.json
         try:
             with open(self.data_path, 'r') as f:
                 data = json.load(f)
@@ -188,29 +154,24 @@ class BehaviorTracker:
                 with open(self.data_path, 'w') as f:
                     json.dump(data, f, indent=2)
             else:
-                # If we tried to sync but it wasn't there, create it now (fallback)
+                # not in file yet, create new entry
                 self._create_dynamic_entry(url, "discovered")
                 
         except Exception as e:
             print(f"Error syncing behavior data: {e}")
 
     def calculate_trust(self, url: str) -> float:
-        """
-        Calculate trust score based on domain authority.
-        
-        Rules:
-        - .gov, .edu -> 0.85 (High Trust)
-        - Known Authorities (wiki, github, etc.) -> 0.9 (Very High Trust)
-        - Semi-trusted -> 0.5 - 0.8
-        - Unknown/Generic -> 0.4 (Low Trust)
-        """
+        # figure out how trustworthy a domain is based on its URL
+        # .gov and .edu = super trusted
+        # wikipedia, github etc = very trusted
+        # random sites = not so much
         lower_url = url.lower()
         
-        # 1. High Trust TLDs
+        # government and education sites
         if ".gov" in lower_url or ".edu" in lower_url:
             return 0.85
             
-        # 2. Known Authorities Whitelist
+        # well known trusted sites
         high_trust_domains = [
             "wikipedia.org", "github.com", "bbc.com", "cnn.com", 
             "nytimes.com", "reuters.com", "who.int", "nasa.gov",
@@ -221,7 +182,7 @@ class BehaviorTracker:
             if domain in lower_url:
                 return 0.9
         
-        # 3. Semi-Trusted (Common aggregators)
+        # kinda trusted (reddit, youtube etc)
         semi_trusted_domains = [
             "reddit.com", "quora.com", "youtube.com", "linkedin.com"
         ]
@@ -230,29 +191,29 @@ class BehaviorTracker:
             if domain in lower_url:
                 return 0.6
                 
-        # 4. Default / Unknown
+        # dont know this site, give it low trust
         return 0.4
 
     def _create_dynamic_entry(self, url: str, query: str):
-        """Create a new entry in data.json for a dynamically discovered URL."""
+        # add a new URL to data.json when we see it for first time
         try:
             with open(self.data_path, 'r') as f:
                 data = json.load(f)
             
-            # double check it doesn't exist
+            # make sure it doesnt already exist
             for item in data.get("mock_search_results", []):
                 if item["source"] == url:
                     return
 
             new_id = len(data.get("mock_search_results", [])) + 1
             
-            # Calculate dynamic trust
+            # figure out how much to trust this domain
             trust_score = self.calculate_trust(url)
             
             new_entry = {
                 "id": new_id,
                 "source": url,
-                "title": f"Dynamic Result: {query}", # Placeholder title
+                "title": f"Dynamic Result: {query}",
                 "content": f"Dynamically visited page for query: {query}",
                 "keywords": query.split(),
                 "trust": trust_score, 
@@ -273,5 +234,5 @@ class BehaviorTracker:
             print(f"Error creating dynamic entry: {e}")
 
 
-# Global tracker instance
+# make one instance and use it everywhere
 behavior_tracker = BehaviorTracker()

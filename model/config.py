@@ -1,4 +1,4 @@
-"""Configuration settings for DivyaDhrishti."""
+# all the settings and config stuff for the search engine
 
 import os
 from dotenv import load_dotenv
@@ -6,14 +6,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # =====================================================
-# SEARCH MODE CONFIGURATION
+# SEARCH MODE SETUP
 # =====================================================
-# Options: "hybrid" or "local_only"
-# - "hybrid": Try external search (Google → Bing → Yahoo), fallback to local if all fail
-# - "local_only": Skip external search, use URLs from data.json and scrape them
-SEARCH_MODE = "local_only"  # Change this to switch modes
+# you can pick "hybrid" or "local_only"
+# hybrid = tries google/bing/yahoo first, falls back to local database if they all fail
+# local_only = just uses the URLs from data.json and scrapes em
+SEARCH_MODE = "hybrid"  # change this if you want different mode
 
-# Emergency detection keywords
+# words that trigger emergency mode
+# if user searches for these, we prioritize fresh info and trusted sources
 EMERGENCY_KEYWORDS = [
     "earthquake", "tsunami", "wildfire", "hurricane", "flood",
     "evacuation", "shelter", "emergency alert", "active shooter",
@@ -24,18 +25,18 @@ EMERGENCY_KEYWORDS = [
 ]
 
 # =====================================================
-# SOURCE TRUST TIERS (ordered by credibility)
+# HOW MUCH WE TRUST DIFFERENT SOURCES
 # =====================================================
 
-# Tier 1: Official sources (government, education, military)
+# tier 1: government and education sites - these are super trustworthy
 OFFICIAL_SOURCES = [
     ".gov", ".edu", ".mil",".org","usgs.gov",
     "weather.gov", "noaa.gov", "fema.gov", "cdc.gov"
 ]
 
-# Tier 2: Verified sources (established news agencies & organizations)
+# tier 2: verified news sites - pretty reliable but not as official
 VERIFIED_SOURCES = [
-    # Major news agencies
+    # big news agencies
     "reuters.com", "apnews.com", 
     
     # International broadcasters
@@ -51,9 +52,9 @@ VERIFIED_SOURCES = [
     "who.int", "redcross.org", "un.org"
 ]
 
-# Tier 3: Semi-trusted sources (moderate credibility)
+# tier 3: semi-trusted - ok but not amazing
 SEMI_TRUSTED_SOURCES = [
-    # Mainstream media outlets
+    # mainstream media
     "abc.com", "nbcnews.com", "cbsnews.com", "foxnews.com",
     "usatoday.com", "wsj.com", "bloomberg.com", "forbes.com",
     "time.com", "newsweek.com", "politico.com", "thehill.com",
@@ -77,26 +78,28 @@ SEMI_TRUSTED_SOURCES = [
     "mayoclinic.org", "webmd.com", "healthline.com"
 ]
 
-# Scoring weights (must sum to 1.0)
+# how much weight we give to different factors when ranking results
+# these gotta add up to 1.0
 STANDARD_MODE_WEIGHTS = {
-    "relevance": 0.30,    # How well query matches document
-    "trust": 0.25,        # Source credibility
-    "freshness": 0.15,    # Content recency
-    "popularity": 0.20,   # Click-through rate
-    "location": 0.10      # Geographic relevance
+    "relevance": 0.30,    # how well it matches what user searched for
+    "trust": 0.25,        # is the source reliable
+    "freshness": 0.15,    # how recent is the info
+    "popularity": 0.20,   # how many people click it
+    "location": 0.10      # does it match the location user wants
 }
 
+# for emergency mode we care more about fresh info and less about popularity
 EMERGENCY_MODE_WEIGHTS = {
-    "relevance": 0.20,    # Less critical in emergencies
-    "trust": 0.25,        # Source credibility
-    "freshness": 0.35,    # Recent info is critical
-    "popularity": 0.05,   # Less important
-    "location": 0.15      # Geographic relevance
+    "relevance": 0.20,    # still matters but not as much
+    "trust": 0.25,        # gotta be trustworthy in emergencies
+    "freshness": 0.35,    # THIS IS SUPER IMPORTANT - need latest info
+    "popularity": 0.05,   # dont really care about clicks in emergency
+    "location": 0.15      # location matters more in emergencies
 }
 
-# Behavior tracking settings
-POGO_STICK_THRESHOLD_SECONDS = 5  # Quick return threshold
-POGO_STICK_PENALTY = 0.3  # Score reduction for high bounce rate
-MAX_POGO_COUNT_BEFORE_DEMOTE = 3  # Demote after this many quick returns
-ENABLE_LOCAL_SEARCH = False # Toggle to allow searching local data.json
-ENABLE_EXTERNAL_SEARCH = True # Toggle to allow mixing local index with Google/Brave results
+# pogo-sticking settings (when people bounce back quickly from a result)
+POGO_STICK_THRESHOLD_SECONDS = 5  # if they come back in less than 5 sec, thats a pogo
+POGO_STICK_PENALTY = 0.3  # how much we reduce the score
+MAX_POGO_COUNT_BEFORE_DEMOTE = 3  # after 3 pogos we really demote it
+ENABLE_LOCAL_SEARCH = False # set true if you want to search local database
+ENABLE_EXTERNAL_SEARCH = True # set true to mix local with google/brave results

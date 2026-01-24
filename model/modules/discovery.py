@@ -5,9 +5,10 @@ from bs4 import BeautifulSoup
 import random
 
 class DiscoveryLayer:
-    """Uses a discovery tool to find relevant URLs for deep scraping."""
+    # finds URLs to scrape by searching duckduckgo, bing, or yahoo
     
     def __init__(self):
+        # different user agents so we dont look like a bot
         self.user_agents = [
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -17,13 +18,11 @@ class DiscoveryLayer:
         ]
     
     def discover_urls(self, query: str, num_results: int = 5) -> List[str]:
-        """
-        Find candidate URLs for a query.
-        Tries 3 backends for robustness: DuckDuckGo → Bing → Yahoo
-        """
+        # try to find URLs for the search query
+        # tries duckduckgo first, then bing, then yahoo if those fail
         urls = []
         
-        # 1. Try DuckDuckGo (Primary - Most reliable for scraping)
+        # first try duckduckgo (works best usually)
         try:
             print(f"Discovery (DuckDuckGo) attempting for query: {query}")
             urls = self._search_duckduckgo(query, num_results)
@@ -34,7 +33,7 @@ class DiscoveryLayer:
         except Exception as e:
             print(f"Discovery (DuckDuckGo) Error: {e}")
 
-        # 2. Try Bing (Fallback 1)
+        # duckduckgo failed, try bing
         try:
             print(f"Trying Fallback 1 Discovery (Bing) for query: {query}")
             urls = self._search_bing(query, num_results)
@@ -45,7 +44,7 @@ class DiscoveryLayer:
         except Exception as e:
             print(f"Discovery (Bing) Error: {e}")
 
-        # 3. Try Yahoo (Fallback 2)
+        # bing also failed, last chance with yahoo
         try:
             print(f"Trying Fallback 2 Discovery (Yahoo) for query: {query}")
             urls = self._search_yahoo(query, num_results)
@@ -60,7 +59,7 @@ class DiscoveryLayer:
         return []
     
     def _search_duckduckgo(self, query: str, num_results: int) -> List[str]:
-        """Search DuckDuckGo HTML and extract result URLs."""
+        # scrape duckduckgo HTML page for search results
         headers = {
             'User-Agent': random.choice(self.user_agents),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -81,11 +80,11 @@ class DiscoveryLayer:
         soup = BeautifulSoup(response.text, 'html.parser')
         urls = []
         
-        # DuckDuckGo HTML results are in <a class="result__a"> tags
+        # duckduckgo puts results in <a class="result__a"> tags
         for result in soup.find_all('a', class_='result__a', href=True):
             url = result['href']
             
-            # Filter out DuckDuckGo internal links
+            # skip duckduckgo's own links
             if url.startswith('http') and 'duckduckgo.com' not in url:
                 if url not in urls:
                     urls.append(url)
@@ -95,7 +94,7 @@ class DiscoveryLayer:
         return urls
     
     def _search_bing(self, query: str, num_results: int) -> List[str]:
-        """Search Bing and extract result URLs."""
+        # scrape bing search results
         headers = {
             'User-Agent': random.choice(self.user_agents),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -112,7 +111,7 @@ class DiscoveryLayer:
         soup = BeautifulSoup(response.text, 'html.parser')
         urls = []
         
-        # Bing results are in <li class="b_algo"> with <a> tags
+        # bing results are in <li class="b_algo"> tags
         for result in soup.find_all('li', class_='b_algo'):
             a_tag = result.find('a', href=True)
             if a_tag:
@@ -129,7 +128,7 @@ class DiscoveryLayer:
         return urls
     
     def _search_yahoo(self, query: str, num_results: int) -> List[str]:
-        """Search Yahoo and extract result URLs."""
+        # scrape yahoo search results
         headers = {
             'User-Agent': random.choice(self.user_agents),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -146,14 +145,13 @@ class DiscoveryLayer:
         soup = BeautifulSoup(response.text, 'html.parser')
         urls = []
         
-        # Yahoo results - look for actual result links
+        # yahoo wraps URLs in weird redirects sometimes
         for a in soup.find_all('a', href=True):
             href = a['href']
             
-            # Yahoo sometimes wraps URLs in redirects, try to extract real URL
+            # yahoo sometimes has /RU= in the URL, need to extract real URL
             if '/RU=' in href:
                 try:
-                    # Extract actual URL from Yahoo redirect
                     real_url = href.split('/RU=')[1].split('/RK=')[0]
                     from urllib.parse import unquote
                     href = unquote(real_url)
@@ -172,4 +170,5 @@ class DiscoveryLayer:
         
         return urls
 
+# make one instance to use everywhere
 discovery_layer = DiscoveryLayer()
