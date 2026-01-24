@@ -1,5 +1,5 @@
 flask
-duckduckgo-search
+
 python-dotenv
 rank-bm25==0.2.2
 spacy>=3.0.0

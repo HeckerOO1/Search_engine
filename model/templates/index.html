@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Emergency-aware search engine that prioritizes fresh, trustworthy information during crises">
-    <title>CrisisSearch - Emergency-Aware Search Engine</title>
+    <meta name="description"
+        content="Emergency-aware search engine that prioritizes fresh, trustworthy information during crises">
+    <title>DivyaDhrishti - Emergency-Aware Search Engine</title>
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div id="app" class="standard-mode">
         <!-- Emergency Alert Banner (hidden by default) -->
@@ -23,9 +26,10 @@
         <header class="header">
             <div class="logo">
                 <span class="logo-icon">🔍</span>
-                <h1>CrisisSearch</h1>
+                <h1>DivyaDhrishti</h1>
                 <span class="mode-badge" id="mode-badge">Standard Mode</span>
-                <button type="button" class="emergency-toggle-btn" id="emergency-toggle" title="Switch to Emergency Mode">
+                <button type="button" class="emergency-toggle-btn" id="emergency-toggle"
+                    title="Switch to Emergency Mode">
                     🚨 Emergency
                 </button>
                 <div class="ai-toggle-wrapper">
@@ -44,14 +48,9 @@
             <div class="search-container">
                 <form id="search-form" class="search-form">
                     <div class="search-input-wrapper">
-                        <input 
-                            type="text" 
-                            id="search-input" 
-                            class="search-input" 
+                        <input type="text" id="search-input" class="search-input"
                             placeholder="Search for anything... Emergency queries trigger safety mode"
-                            autocomplete="off"
-                            autofocus
-                        >
+                            autocomplete="off" autofocus>
                         <button type="submit" class="search-button" id="search-button">
                             <span class="search-icon">🔍</span>
                             Search
@@ -60,8 +59,10 @@
                     <div class="search-hints">
                         <span class="hint">Try: </span>
                         <button type="button" class="hint-chip" data-query="python tutorials">python tutorials</button>
-                        <button type="button" class="hint-chip emergency" data-query="earthquake evacuation route">earthquake evacuation</button>
-                        <button type="button" class="hint-chip emergency" data-query="wildfire shelter locations">wildfire shelter</button>
+                        <button type="button" class="hint-chip emergency"
+                            data-query="earthquake evacuation route">earthquake evacuation</button>
+                        <button type="button" class="hint-chip emergency"
+                            data-query="wildfire shelter locations">wildfire shelter</button>
                     </div>
                 </form>
             </div>
@@ -88,7 +89,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>CrisisSearch uses AI to prioritize trustworthy, fresh information during emergencies</p>
+            <p>DivyaDhrishti uses AI to prioritize trustworthy, fresh information during emergencies</p>
             <div class="legend">
                 <span class="legend-item"><span class="badge verified">✓</span> Verified Source</span>
                 <span class="legend-item"><span class="badge unverified">?</span> Unverified</span>
@@ -99,4 +100,5 @@
 
     <script src="/static/script.js"></script>
 </body>
+
 </html>

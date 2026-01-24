@@ -1,20 +1,21 @@
 """Custom Search Module.
 
-Implements Discovery -> Scrape -> Rank pipeline for "from-scratch" searching.
-Uses discovery tool for URLs, then scrapes and ranks content natively.
+Two Modes:
+1. Hybrid: Try external search (Google→Bing→Yahoo), fallback to local if all fail
+2. Local-Only: Use URLs from data.json and scrape them for fresh content
 """
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 import time
 import json
 import os
 import random
 from modules.discovery import discovery_layer
 from modules.scraper import scraper
-
+from config import SEARCH_MODE
 
 class SearchEngine:
-    """End-to-end custom search engine."""
+    """End-to-end strict search engine."""
     
     def __init__(self):
         self.mock_data = []
@@ -34,54 +35,101 @@ class SearchEngine:
         except Exception as e:
             print(f"Warning: Could not load mock data: {e}")
             self.mock_data = []
+    def _normalize_url(self, url: str) -> str:
+        """
+        Normalize URL by removing fragments and query parameters.
+        This prevents duplicates like:
+        - https://en.wikipedia.org/wiki/Page
+        - https://en.wikipedia.org/wiki/Page#section
+        - https://en.wikipedia.org/wiki/Page?param=value
+        """
+        from urllib.parse import urlparse, urlunparse
+        
+        parsed = urlparse(url)
+        # Remove fragment (#) and query (?)
+        normalized = urlunparse((
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            '',  # params
+            '',  # query
+            ''   # fragment
+        ))
+        return normalized
 
     def search(self, query: str, num_results: int = 10, **kwargs) -> dict:
         """
-        Execute a custom search pipeline.
-        
-        Orchestration:
-        1. Discover URLs (Broad coverage)
-        2. Scrape Content (Deep data fetching)
-        3. Rank & Package (Custom Logic)
+        Execute search based on SEARCH_MODE configuration.
         """
         start_time = time.time()
         results = []
+        source_used = "unknown"
         
         try:
-            # phase 1: Discovery (URL finding)
-            candidate_urls = discovery_layer.discover_urls(query, num_results=num_results + 5)
-            
-            # phase 2: Scraping (Live Data Fetching)
-            scraped_items = []
-            if candidate_urls:
-                for url in candidate_urls:
-                    item = scraper.scrape(url)
-                    if item:
-                        scraped_items.append(item)
-                    
-                    # Soft rate limiting for scraper
-                    time.sleep(0.3)
-            
-            # phase 3: Transformation to standard results
-            for item in scraped_items:
-                result = self._parse_scraped_item(item)
-                if result:
-                    results.append(result)
-            
-            # If no live results found, fallback to mock data
-            is_mock = False
-            if not results:
-                print("No live results fetched, falling back to mock data.")
-                results = self._search_mock(query, num_results)
-                is_mock = True
+            if SEARCH_MODE == "local_only":
+                # LOCAL-ONLY MODE: Get URLs from data.json and scrape them
+                print(f"[LOCAL-ONLY MODE] Searching local database and scraping URLs...")
+                results = self._search_local_with_scraping(query, num_results)
+                source_used = "local_database"
                 
+            else:
+                # HYBRID MODE: Try external, fallback to local
+                print(f"[HYBRID MODE] Attempting external search...")
+                candidate_urls = discovery_layer.discover_urls(query, num_results=num_results)
+                
+                if candidate_urls:
+                    # --- LIVE PATH ---
+                    print(f"Discovery found {len(candidate_urls)} URLs. Proceeding to SCRAPE.")
+                    source_used = "live"
+                    
+                    # PHASE 2: SCRAPING (with deduplication)
+                    scraped_items = []
+                    seen_urls = set()
+                    
+                    for url in candidate_urls:
+                        # Normalize URL to prevent duplicates with different fragments/params
+                        normalized_url = self._normalize_url(url)
+                        
+                        # Skip if we've already processed this normalized URL
+                        if normalized_url in seen_urls:
+                            print(f"Skipping duplicate: {url}")
+                            continue
+                        seen_urls.add(normalized_url)
+                        
+                        # Scrape using the original URL
+                        item = scraper.scrape(url)
+                        if item:
+                            # Store normalized URL to ensure consistency
+                            item['link'] = normalized_url
+                            scraped_items.append(item)
+                        # Soft rate limiting
+                        time.sleep(0.3)
+                    
+                    # PHASE 3: PARSING & RANKING PREP
+                    for item in scraped_items:
+                        result = self._parse_scraped_item(item)
+                        if result:
+                            results.append(result)
+                            
+                    # Determine specific live source for UI
+                    if results and "google" in results[0]["link"]: source_used = "google"
+                    elif results and "bing.com" in results[0]["link"]: source_used = "bing"
+                    elif results and "yahoo.com" in results[0]["link"]: source_used = "yahoo"
+                    
+                else:
+                    # --- FALLBACK PATH ---
+                    # Only entered if Discovery returned ZERO URLs
+                    print("Discovery returned 0 URLs. Switching to EXCLUSIVE FALLBACK (Local Data).")
+                    results = self._search_mock(query, num_results)
+                    source_used = "database"
+
             search_time = time.time() - start_time
             
             message = None
-            if is_mock:
-                message = "Search limited: Showing results from verified crisis database."
+            if source_used == "database":
+                message = "Live search unavailable. Showing verified results from offline database."
             elif not results:
-                message = "No results found for this query."
+                message = "No results found."
 
             return {
                 "results": results[:num_results],
@@ -90,18 +138,20 @@ class SearchEngine:
                 "query": query,
                 "error": None,
                 "message": message,
-                "source": "database" if is_mock else "live"
+                "source": source_used, # 'live', 'brave', 'database', etc.
+                "mode": kwargs.get("mode", "standard")
             }
                 
         except Exception as e:
-            print(f"Custom Search failed ({e}), switching to Mock Fallback.")
+            print(f"Critical Search Error: {e}. Defaulting to Database.")
             return {
                 "results": self._search_mock(query, num_results),
                 "total_results": 0,
                 "search_time": round(time.time() - start_time, 2),
                 "query": query,
                 "error": str(e),
-                "source": "error_fallback"
+                "source": "error_fallback",
+                "message": "System error. Using offline mode."
             }
 
     def _parse_scraped_item(self, item: dict) -> dict:
@@ -125,17 +175,101 @@ class SearchEngine:
             "timestamp": item.get("timestamp")
         }
 
+    def _search_local_with_scraping(self, query: str, num_results: int = 10) -> list:
+        """
+        LOCAL-ONLY MODE: Search data.json for matching entries and scrape their URLs.
+        This provides fresh content from local URLs instead of using stored snippets.
+        """
+        query_terms = query.lower().split()
+        matched_items = []
+        
+        # Find matching items in local data
+        for item in self.mock_data:
+            text = (item.get("title", "") + " " + item.get("content", "") + " " + " ".join(item.get("keywords", []))).lower()
+            
+            score = 0
+            for term in query_terms:
+                if term in text:
+                    score += 1
+            
+            if score > 0:
+                matched_items.append((score, item))
+        
+        # Sort by relevance
+        matched_items.sort(key=lambda x: x[0], reverse=True)
+        
+        # Scrape URLs from matched items
+        results = []
+        seen_urls = set()
+        
+        for score, item in matched_items[:num_results * 2]:  # Get more to account for scraping failures
+            url = item.get("source", "")
+            
+            # Skip if no URL or already processed
+            if not url or url == "#" or not url.startswith("http"):
+                continue
+            
+            normalized_url = self._normalize_url(url)
+            if normalized_url in seen_urls:
+                continue
+            seen_urls.add(normalized_url)
+            
+            # Scrape the URL for fresh content
+            print(f"[LOCAL-ONLY] Scraping: {url}")
+            scraped = scraper.scrape(url)
+            
+            if scraped:
+                scraped['link'] = normalized_url
+                result = self._parse_scraped_item(scraped)
+                if result:
+                    results.append(result)
+                    if len(results) >= num_results:
+                        break
+            
+            time.sleep(0.3)  # Rate limiting
+        
+        # If scraping didn't get enough results, fill with stored data
+        if len(results) < num_results:
+            print(f"[LOCAL-ONLY] Scraping got {len(results)} results, filling with stored data...")
+            for score, item in matched_items:
+                if len(results) >= num_results:
+                    break
+                # Check if we already have this URL
+                url = self._normalize_url(item.get("source", ""))
+                if url not in seen_urls:
+                    results.append(self._parse_mock_result(item))
+        
+        return results[:num_results]
+
+
     def _search_mock(self, query: str, num_results: int = 10) -> list:
-        """Search local mock data as fallback."""
+        """Search local mock data as strict fallback."""
         query_terms = query.lower().split()
         results = []
         
         for item in self.mock_data:
-            text = (item.get("title", "") + " " + item.get("content", "")).lower()
-            if any(term in text for term in query_terms):
-                results.append(self._parse_mock_result(item))
+            # searchable text: title + content + keywords
+            text = (item.get("title", "") + " " + item.get("content", "") + " " + " ".join(item.get("keywords", []))).lower()
+            
+            # Simple scoring for fallback
+            score = 0
+            for term in query_terms:
+                if term in text:
+                    score += 1
+            
+            if score > 0:
+                res = self._parse_mock_result(item)
+                # Store temporary score for sorting
+                res["_temp_score"] = score
+                results.append(res)
                 
-        random.shuffle(results)
+        # Sort by simple keyword match count
+        results.sort(key=lambda x: x["_temp_score"], reverse=True)
+        
+        # Remove temp score before returning
+        for r in results:
+            del r["_temp_score"]
+            
         return results[:num_results]
 
     def _parse_mock_result(self, item: dict) -> dict:
@@ -145,20 +279,21 @@ class SearchEngine:
             "link": item.get("source", "#"),
             "snippet": item.get("content", ""),
             "content": item.get("content", ""),
-            "displayLink": "Fallback Data",
-            "trust_score": item.get("trust", 0.5),
-            "freshness_score": 0.8,
+            "displayLink": "Verified Database",
+            "trust_score": item.get("trust", 0.9), # High trust for curated data
+            "freshness_score": 0.5, # Mid freshness for static data
             "final_score": 0,
-            "badge": "verified" if item.get("trust", 0) > 0.8 else "unverified",
-            "freshness_label": "recent",
+            "badge": "verified", # Always verified
+            "freshness_label": "archived",
             "location": item.get("location", "")
         }
 
     def search_emergency(self, query: str, num_results: int = 10) -> dict:
         """
-        Emergency search optimizes for official sources.
+        Emergency search. 
+        In strict mode, we use the same pipeline but the App layer will apply different Ranking weights.
         """
-        return self.search(query, num_results=num_results)
+        return self.search(query, num_results=num_results, mode="emergency")
 
 
 # Singleton instance

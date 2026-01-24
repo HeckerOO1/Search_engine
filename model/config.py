@@ -1,9 +1,17 @@
-"""Configuration settings for the Emergency Search Engine."""
+"""Configuration settings for DivyaDhrishti."""
 
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# =====================================================
+# SEARCH MODE CONFIGURATION
+# =====================================================
+# Options: "hybrid" or "local_only"
+# - "hybrid": Try external search (Google → Bing → Yahoo), fallback to local if all fail
+# - "local_only": Skip external search, use URLs from data.json and scrape them
+SEARCH_MODE = "local_only"  # Change this to switch modes
 
 # Emergency detection keywords
 EMERGENCY_KEYWORDS = [
@@ -21,7 +29,7 @@ EMERGENCY_KEYWORDS = [
 
 # Tier 1: Official sources (government, education, military)
 OFFICIAL_SOURCES = [
-    ".gov", ".edu", ".mil",".org",
+    ".gov", ".edu", ".mil",".org","usgs.gov",
     "weather.gov", "noaa.gov", "fema.gov", "cdc.gov"
 ]
 
@@ -90,3 +98,5 @@ EMERGENCY_MODE_WEIGHTS = {
 POGO_STICK_THRESHOLD_SECONDS = 5  # Quick return threshold
 POGO_STICK_PENALTY = 0.3  # Score reduction for high bounce rate
 MAX_POGO_COUNT_BEFORE_DEMOTE = 3  # Demote after this many quick returns
+ENABLE_LOCAL_SEARCH = False # Toggle to allow searching local data.json
+ENABLE_EXTERNAL_SEARCH = True # Toggle to allow mixing local index with Google/Brave results

@@ -1,4 +1,4 @@
-"""Emergency Search Engine - Flask Backend.
+"""DivyaDhrishti - Flask Backend.
 
 Main application server that combines all modules to provide
 an emergency-aware search experience.
@@ -220,7 +220,7 @@ def stats():
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("Emergency Search Engine")
+    print("DivyaDhrishti")
     print("=" * 50)
     print("Starting server at http://127.0.0.1:5001")
     print("Press Ctrl+C to stop")

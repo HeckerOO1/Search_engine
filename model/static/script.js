@@ -1,5 +1,5 @@
 /**
- * CrisisSearch - Frontend JavaScript
+ * DivyaDhrishti - Frontend JavaScript
  * Handles search interactions, mode switching, and user behavior tracking
  */
 

@@ -8,9 +8,9 @@ import numpy as np
 from typing import Optional, List
 from config import EMERGENCY_KEYWORDS
 
-# Global model cache
+# Global model cache and state
 _word2vec_model = None
-
+_model_load_attempted = False
 
 def get_word2vec_model():
     """
@@ -20,10 +20,15 @@ def get_word2vec_model():
     Returns:
         Loaded Word2Vec model or None if loading fails
     """
-    global _word2vec_model
+    global _word2vec_model, _model_load_attempted
     
     if _word2vec_model is not None:
         return _word2vec_model
+        
+    if _model_load_attempted:
+        return None
+    
+    _model_load_attempted = True
     
     try:
         import gensim.downloader as api
